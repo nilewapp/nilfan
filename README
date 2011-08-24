@@ -1,0 +1,14 @@
+== Description
+A fan control daemon for macbook pros running Arch Linux
+
+== Installation
+1. cd to the package directory and run 'makepkg -s'
+2. run 'pacman -U nilfan*.pkg.tar.xz'
+
+== Configuration
+The default configuration should be enough for most people, but to configure nilfan edit '/etc/nilfan.conf'.
+
+The format of the configuration file is:
+<low temp> <high temp> <min rpm> <max rpm> <poll freq>
+
+Note: min/max rpm should be within the boundaries of 2000-6200
