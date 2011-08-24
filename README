@@ -3,7 +3,8 @@ A fan control daemon for macbook pros running Arch Linux
 
 == Installation
 1. cd to the package directory and run 'makepkg -s'
-2. run 'pacman -U nilfan*.pkg.tar.xz'
+2. Run 'pacman -U nilfan*.pkg.tar.xz'
+3. To start nilfan at boot add 'nilfan' to your DAEMONS list in /etc/rc.conf
 
 == Configuration
 The default configuration should be enough for most people, but to configure nilfan edit '/etc/nilfan.conf'.
