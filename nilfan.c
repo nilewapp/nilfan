@@ -18,7 +18,6 @@
 #define ERROR 1
 #define SUCCESS 0
 
-
 typedef struct
 {
     unsigned short old_speed;
@@ -26,7 +25,6 @@ typedef struct
     unsigned short max_speed;
     unsigned short min_speed;
 } Fan;
-
 
 typedef struct 
 {
@@ -39,7 +37,6 @@ typedef struct
     unsigned short polling_interval;
 } Machine;
 
-
 /* Prototypes */
 void signal_handler(int);
 void set_manual(int);
@@ -50,7 +47,6 @@ unsigned short calc_fan_speed(Machine, double A, double k);
 void set_fan_speed(int);
 void init(Machine*);
 int main();
-
 
 /* Handles any system signals */
 void signal_handler(int signal)
@@ -68,13 +64,11 @@ void signal_handler(int signal)
     }
 }
 
-
 /* Logs when the program changes fan speed */
 void log_fan_speed(unsigned short speed, unsigned short temp)
 {
     syslog(LOG_INFO, "Change: fan speed %d RPM temperature %d degrees celsius", speed, temp);
 }
-
 
 /* Query the number of cpu cores of the machine */
 unsigned short query_cores()
@@ -100,14 +94,12 @@ unsigned short query_cores()
     }
     else 
     {
-        cores = 0;
         syslog(LOG_ERR, "Error couldn't determine number of cpu cores");
         closelog();
         exit(ERROR);
     }
     return (unsigned short)cores;
 }
-
 
 /* Sets/clears manual fan control */
 void set_manual(int set)
@@ -126,7 +118,6 @@ void set_manual(int set)
     }
 }
 
-
 /* Get the temperature of a cpu core */
 int get_core_temp(int core)
 {
@@ -141,7 +132,6 @@ int get_core_temp(int core)
     }
     else
     {
-        temp = 0;
         syslog(LOG_ERR, "Error couldn't get temperature of core #%d", core);
         closelog();
         exit(ERROR);
@@ -150,16 +140,14 @@ int get_core_temp(int core)
     return temp;
 }
 
-
 /* Get the average temperature of the cpu cores */
 unsigned short get_temp(unsigned short cores)
 {
     int sum = 0, index;
-    for(index = 0; index < cores; index++)
-        sum += get_core_temp(index+2);
+    for(index = 2; index < cores+2; index++)
+        sum += get_core_temp(index);
     return (unsigned short)(sum / (cores * 1000));
 }
-
 
 /* Calculates the fan speed */
 unsigned short calc_fan_speed(Machine mach, double A, double k)
@@ -174,11 +162,12 @@ unsigned short calc_fan_speed(Machine mach, double A, double k)
     }
     else
     {
+        // Exponential
         return (unsigned short)ceil(A * exp(k * mach.temp));
+        // Linear
         //return (mach.fan.max_speed-mach.fan.min_speed)/(mach.high_temp-mach.low_temp)*(mach.temp-mach.low_temp)+mach.fan.min_speed;
     }
 }
-
 
 /* Sets the fan speed */
 void set_fan_speed(int fan_speed)
@@ -252,16 +241,13 @@ int main()
     while(1)
     {
         mach.temp = get_temp(mach.cores);
-        if(abs(mach.temp - mach.old_temp) > 1)
+        mach.fan.speed = calc_fan_speed(mach, A, k);
+        if(mach.fan.old_speed != mach.fan.speed)
         {
-            mach.fan.speed = calc_fan_speed(mach, A, k);
-            if(mach.fan.old_speed != mach.fan.speed)
-            {
-                set_fan_speed(mach.fan.speed);
-                log_fan_speed(mach.fan.speed, mach.temp);
-                mach.fan.old_speed = mach.fan.speed;
-                mach.old_temp = mach.temp;
-            }
+            set_fan_speed(mach.fan.speed);
+            log_fan_speed(mach.fan.speed, mach.temp);
+            mach.fan.old_speed = mach.fan.speed;
+            mach.old_temp = mach.temp;
         }
         sleep(mach.polling_interval);
     }
