@@ -1,5 +1,5 @@
 pkgname=simplefan
-pkgver=1.0
+pkgver=1.0.1
 pkgrel=1
 pkgdesc="Fan Control daemon for MacBook Pro laptops"
 arch=('i686' 'x86_64')
