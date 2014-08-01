@@ -1,0 +1,9 @@
+[Unit]
+Description=Fan Control
+After=syslog.target
+
+[Service]
+ExecStart=/usr/bin/simplefan
+
+[Install]
+WantedBy=multi-user.target

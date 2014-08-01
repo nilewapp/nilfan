@@ -6,17 +6,19 @@
 #include <unistd.h>
 #include <math.h>
 
-#define CONF "/etc/nilfan.conf"
+#define CONF "/etc/simplefan.conf"
 
 #define MANUAL_SET "/sys/devices/platform/applesmc.768/fan1_manual"
 #define FAN_OUTPUT "/sys/devices/platform/applesmc.768/fan1_output"
 
 #define CPUINFO "/proc/cpuinfo"
-#define TEMP_PATH_PRE "/sys/devices/platform/coretemp.0/temp"
+#define TEMP_PATH_PRE "/sys/devices/platform/coretemp.0/hwmon/hwmon0/temp"
 #define TEMP_PATH_SUF "_input"
 
 #define ERROR 1
 #define SUCCESS 0
+
+#define DEBUG
 
 typedef struct
 {
@@ -26,7 +28,7 @@ typedef struct
     unsigned short min_speed;
 } Fan;
 
-typedef struct 
+typedef struct
 {
     Fan fan;
     unsigned short old_temp;
@@ -54,11 +56,16 @@ void signal_handler(int signal)
     switch(signal)
     {
     case SIGHUP:
-        break;
+    case SIGKILL:
+    case SIGINT:
     case SIGTERM:
         set_manual(0);
+#ifndef DEBUG
         syslog(LOG_INFO, "Stop");
         closelog();
+#else
+        printf("Stop\n");
+#endif
         exit(SUCCESS);
         break;
     }
@@ -67,7 +74,11 @@ void signal_handler(int signal)
 /* Logs when the program changes fan speed */
 void log_fan_speed(unsigned short speed, unsigned short temp)
 {
+#ifndef DEBUG
     syslog(LOG_INFO, "Change: fan speed %d RPM temperature %d degrees celsius", speed, temp);
+#else
+    printf("Change: fan speed %d RPM temperature %d degrees celsius\n", speed, temp);
+#endif
 }
 
 /* Query the number of cpu cores of the machine */
@@ -82,7 +93,7 @@ unsigned short query_cores()
         char *buf = (char*)malloc(sizeof(char)*buf_size+1);
         while(!found && getline(&buf, &buf_size, file) != -1)
         {
-            if(strcmp(strtok(buf,"\t :\n"), "cpu") == 0 && 
+            if(strcmp(strtok(buf,"\t :\n"), "cpu") == 0 &&
                 strcmp(strtok(NULL,"\t :\n"), "cores") == 0)
             {
                 sscanf(strtok(NULL,"\t :\n"), "%d", &cores);
@@ -92,10 +103,15 @@ unsigned short query_cores()
         free(buf);
         fclose(file);
     }
-    else 
+    else
     {
-        syslog(LOG_ERR, "Error couldn't determine number of cpu cores");
+        char *err_msg = "Error couldn't determine number of cpu cores";
+#ifndef DEBUG
+        syslog(LOG_ERR, "%s", err_msg);
         closelog();
+#else
+        printf("%s\n", err_msg);
+#endif
         exit(ERROR);
     }
     return (unsigned short)cores;
@@ -105,15 +121,20 @@ unsigned short query_cores()
 void set_manual(int set)
 {
     FILE *file;
-    if((file = fopen(MANUAL_SET, "w")) != NULL) 
+    if((file = fopen(MANUAL_SET, "w")) != NULL)
     {
         fprintf(file, "%d", set);
         fclose(file);
     }
     else
     {
-        syslog(LOG_ERR,"Error couldn't set manual fan control");
+        char *err_msg = "Error couldn't set manual fan control";
+#ifndef DEBUG
+        syslog(LOG_ERR, "%s", err_msg);
         closelog();
+#else
+        printf("%s\n", err_msg);
+#endif
         exit(ERROR);
     }
 }
@@ -132,8 +153,13 @@ int get_core_temp(int core)
     }
     else
     {
-        syslog(LOG_ERR, "Error couldn't get temperature of core #%d", core);
+        char *err_msg = "Error couldn't get temperature of core #";
+#ifndef DEBUG
+        syslog(LOG_ERR, "%s%d", err_msg, core);
         closelog();
+#else
+        printf("%s%d\n", err_msg, core);
+#endif
         exit(ERROR);
     }
     free(path);
@@ -173,15 +199,20 @@ unsigned short calc_fan_speed(Machine mach, double A, double k)
 void set_fan_speed(int fan_speed)
 {
     FILE *file;
-    if((file = fopen(FAN_OUTPUT, "w")) != NULL) 
+    if((file = fopen(FAN_OUTPUT, "w")) != NULL)
     {
         fprintf(file, "%d", fan_speed);
         fclose(file);
     }
     else
     {
-        syslog(LOG_ERR, "Error couldn't set fan speed");
+        char *err_msg = "Error couldn't set fan speed";
+#ifndef DEBUG
+        syslog(LOG_ERR, "%s", err_msg);
         closelog();
+#else
+        printf("%s\n", err_msg);
+#endif
         exit(ERROR);
     }
 }
@@ -202,12 +233,17 @@ void configure(Machine *mach)
         mach->polling_interval = (unsigned short)poll;
         mach->fan.old_speed    = 0;
         mach->cores = query_cores();
-        fclose(file);    
+        fclose(file);
     }
     else
     {
-        syslog(LOG_ERR, "Error couldn't set fan parameters");
+        char *err_msg = "Error couldn't set fan parameters";
+#ifndef DEBUG
+        syslog(LOG_ERR, "%s", err_msg);
         closelog();
+#else
+        printf("%s\n", err_msg);
+#endif
         exit(ERROR);
     }
 }
@@ -216,15 +252,24 @@ void configure(Machine *mach)
 void init(Machine *mach)
 {
     signal(SIGHUP, signal_handler);
+    signal(SIGKILL, signal_handler);
+    signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
 
+#ifndef DEBUG
     openlog("nilfan", LOG_PID, LOG_DAEMON);
+#endif
 
     set_manual(1);
 
     configure(mach);
 
-    syslog(LOG_INFO, "Start");
+    char *log_msg = "Start";
+#ifndef DEBUG
+    syslog(LOG_INFO, "%s", log_msg);
+#else
+    printf("%s\n", log_msg);
+#endif
 }
 
 /* Main function */

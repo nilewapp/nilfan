@@ -1,25 +1,22 @@
-# Maintainer: Allan McRae <allan@archlinux.org>
-
-pkgname=nilfan
+pkgname=simplefan
 pkgver=1.0
-pkgrel=2
-pkgdesc="Automatically adjust the fan on a MacBook Pro"
+pkgrel=1
+pkgdesc="Fan Control daemon for MacBook Pro laptops"
 arch=('i686' 'x86_64')
 license=('GPL3')
-source=(nilfan.c 
-        nilfan.rc
-        nilfan.conf)
-md5sums=('870a649e69d394bf4c696e958fd9d993'
-         'c78ae49062cbabd9202f93f45ff06c0a'
+source=(simplefan.c
+        simplefan.service
+        simplefan.conf)
+md5sums=('a65da19236ac6f00f25a7aee9d561b7b'
+         '358f8d3c4e4afcb4d5d7810804ae491d'
          'b804e802052590b77f6447441fc4fc6e')
 build() {
   cd $srcdir/
-  gcc -o nilfan -lm -Wall $CFLAGS $LDFLAGS nilfan.c
+  gcc -o simplefan -lm -Wall simplefan.c
 }
 
 package() {
-  install -Dm755 $srcdir/nilfan $pkgdir/usr/bin/nilfan
-  install -Dm755 $srcdir/nilfan.rc $pkgdir/etc/rc.d/nilfan
-  install -Dm755 $srcdir/nilfan.conf $pkgdir/etc/nilfan.conf
+  install -Dm755 $srcdir/simplefan $pkgdir/usr/bin/simplefan
+  install -Dm755 $srcdir/simplefan.service $pkgdir/etc/systemd/system/simplefan.service
+  install -Dm644 $srcdir/simplefan.conf $pkgdir/etc/simplefan.conf
 }
-
